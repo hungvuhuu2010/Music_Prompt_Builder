@@ -38,6 +38,8 @@ export const PROMPT_VARIABLES = {
     "{{VOCAL_TONE}}":
         "vocalTone",
 
+    "{{VOCAL_TECHNIQUE}}": 
+	"vocalTechnique",
 
     "{{LYRICS_MODE}}":
         "lyricsMode",
