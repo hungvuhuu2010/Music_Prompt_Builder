@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>AI Music Prompt Builder</title>
+
+    <style>
+
+        /* =====================================================
+           RESET
+           ===================================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1f2937;
+        }
+
+
+        /* =====================================================
+           HEADER
+           ===================================================== */
+
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 18px 24px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        header p {
+            margin: 5px 0 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+
+        /* =====================================================
+           LAYOUT
+           ===================================================== */
+
+        .app {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 420px;
+            gap: 20px;
+
+            max-width: 1500px;
+            margin: 0 auto;
+
+            padding: 20px;
+        }
+
+
+        /* =====================================================
+           PANEL
+           ===================================================== */
+
+        .panel {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .panel + .panel {
+            margin-top: 16px;
+        }
+
+
+        /* =====================================================
+           SECTION
+           ===================================================== */
+
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+
+        /* =====================================================
+           FORM
+           ===================================================== */
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+
+            padding: 9px 10px;
+
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+
+            background: #ffffff;
+            color: #1f2937;
+
+            font-family: inherit;
+            font-size: 14px;
+
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+
+        /* =====================================================
+           CHECKBOX GROUP
+           ===================================================== */
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            padding: 8px;
+
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+
+            font-size: 13px;
+        }
+
+        .checkbox-item input {
+            width: auto;
+        }
+
+
+        /* =====================================================
+           BUTTONS
+           ===================================================== */
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+
+            margin-top: 20px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 6px;
+
+            padding: 9px 14px;
+
+            font-size: 13px;
+            font-weight: 600;
+
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+
+        /* =====================================================
+           PROMPT PREVIEW
+           ===================================================== */
+
+        .preview-panel {
+            position: sticky;
+            top: 20px;
+
+            height: fit-content;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            margin-bottom: 12px;
+        }
+
+        .preview-header h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        #promptOutput {
+            width: 100%;
+            min-height: 650px;
+
+            padding: 14px;
+
+            border: 1px solid #d1d5db;
+            border-radius: 7px;
+
+            background: #f9fafb;
+
+            font-family:
+                Consolas,
+                "Courier New",
+                monospace;
+
+            font-size: 12px;
+            line-height: 1.6;
+
+            resize: vertical;
+        }
+
+
+        /* =====================================================
+           STATUS
+           ===================================================== */
+
+        #status {
+            margin-top: 10px;
+
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+           ===================================================== */
+
+        @media (max-width: 1000px) {
+
+            .app {
+                grid-template-columns: 1fr;
+            }
+
+            .preview-panel {
+                position: static;
+            }
+        }
+
+
+        @media (max-width: 650px) {
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .checkbox-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     HEADER
+     ========================================================= -->
+
+<header>
+
+    <h1>AI Music Prompt Builder</h1>
+
+    <p>
+        Xây dựng prompt chi tiết cho AI sáng tác bài hát
+    </p>
+
+</header>
+
+
+
+<!-- =========================================================
+     MAIN
+     ========================================================= -->
+
+<main class="app">
+
+
+    <!-- =====================================================
+         LEFT — INPUT
+         ===================================================== -->
+
+    <div>
+
+
+        <!-- =================================================
+             01. BASIC INFORMATION
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                01. Thông tin bài hát
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group full">
+
+                    <label for="purpose">
+                        Mục đích
+                    </label>
+
+                    <input
+                        id="purpose"
+                        placeholder="Ví dụ: Sáng tác một bài hát về tình yêu quê hương"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="topic">
+                        Chủ đề
+                    </label>
+
+                    <input
+                        id="topic"
+                        placeholder="Ví dụ: Quê hương"
+                    >
+
+                </div>
+
+<!--
+                <div class="form-group">
+
+                    <label for="language">
+                        Ngôn ngữ
+                    </label>
+
+                    <select id="language">
+
+                        <option value="">
+                            -- Chọn --
+                        </option>
+
+                        <option value="Vietnamese">
+                            Tiếng Việt
+                        </option>
+
+                        <option value="English">
+                            English
+                        </option>
+
+                        <option value="Vietnamese and English">
+                            Việt - Anh
+                        </option>
+
+                    </select>
+
+                </div>
+-->
+
+                <div class="form-group full">
+
+                    <label for="story">
+                        Câu chuyện
+                    </label>
+
+                    <textarea
+                        id="story"
+                        placeholder="Mô tả câu chuyện hoặc bối cảnh..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                    <label for="message">
+                        Thông điệp
+                    </label>
+
+                    <textarea
+                        id="message"
+                        placeholder="Thông điệp chính muốn truyền tải..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             02. GENRE & STYLE
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                02. Dòng nhạc & Phong cách
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="genre">
+                        Dòng nhạc
+                    </label>
+
+                    <select id="genre">
+
+                        <option value="">
+                            -- Chọn dòng nhạc --
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="style">
+                        Phong cách
+                    </label>
+
+                    <select id="style">
+
+                        <option value="">
+                            -- Chọn phong cách --
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             03. MOOD
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                03. Mood & Cảm xúc
+            </div>
+
+<select id="mood">
+    <option value="">
+        -- Chọn cảm xúc chủ đạo --
+    </option>
+</select>
+
+<div
+    id="moodLevelList"
+    class="mood-level-list"
+></div>
+        </section>
+
+
+
+        <!-- =================================================
+             04. TEMPO
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                04. Nhịp độ
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <select id="tempo">
+
+                        <option value="">
+                            -- Nhịp độ --
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             05. VOCAL
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                05. Giọng hát
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="vocal">
+                        Loại giọng
+                    </label>
+
+                    <select id="vocal">
+
+                        <option value="">
+                            -- Chọn --
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="vocalAge">
+                        Độ tuổi / màu giọng
+                    </label>
+
+                    <input
+                        id="vocalAge"
+                        placeholder="Ví dụ: nam trung niên"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="vocalTone">
+                        Vocal tone
+                    </label>
+
+                    <input
+                        id="vocalTone"
+                        placeholder="Ví dụ: warm, husky, emotional"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="vocalTechnique">
+                        Kỹ thuật
+                    </label>
+
+                    <input
+                        id="vocalTechnique"
+                        placeholder="Ví dụ: breathy, vibrato..."
+                    >
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             08. STRUCTURE
+             ================================================= -->
+
+        <!-- =================================================
+             06. LYRICS
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                06. Lời bài hát
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="lyricsMode">
+                        Chế độ
+                    </label>
+
+                    <select id="lyricsMode">
+
+                        <option value="">
+                            -- Chọn --
+                        </option>
+
+                        <option value="generate">
+                            AI tự viết lời
+                        </option>
+
+                        <option value="user_idea">
+                            Dựa trên ý tưởng
+                        </option>
+
+                        <option value="provided">
+                            Sử dụng lời có sẵn
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                    <label for="lyricsIdea">
+                        Ý tưởng lời bài hát
+                    </label>
+
+                    <textarea
+                        id="lyricsIdea"
+                        placeholder="Nội dung, hình ảnh, câu chuyện muốn đưa vào lời..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                    <label for="lyrics">
+                        Lời bài hát có sẵn
+                    </label>
+
+                    <textarea
+                        id="lyrics"
+                        placeholder="Nếu có..."
+                    ></textarea>
+
+                </div>
+
+
+                <div class="form-group full">
+
+                    <label for="lyricsRequirements">
+                        Yêu cầu về lời
+                    </label>
+
+                    <textarea
+                        id="lyricsRequirements"
+                        placeholder="Ví dụ: vần tự nhiên, dễ hát, ngôn ngữ giàu hình ảnh..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             11. NEGATIVE PROMPT
+             ================================================= -->
+
+        <section class="panel section">
+
+            <div class="section-title">
+                07. Điều cần tránh
+            </div>
+
+            <div class="form-grid">
+
+                <div class="form-group full">
+
+                    <label for="negativePrompt">
+                        Không mong muốn
+                    </label>
+
+                    <textarea
+                        id="negativePrompt"
+                        placeholder="Ví dụ: không quá buồn, không rap, không dùng âm thanh điện tử mạnh, không hát quá cao...."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             ACTIONS
+             ================================================= -->
+
+        <div class="actions">
+
+            <button
+                class="btn-primary"
+                id="btnBuild"
+            >
+                Tạo Prompt
+            </button>
+
+            <button
+                class="btn-secondary"
+                id="btnReset"
+            >
+                Xóa dữ liệu
+            </button>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         RIGHT — PROMPT PREVIEW
+         ===================================================== -->
+
+    <aside class="panel preview-panel">
+
+        <div class="preview-header">
+
+            <h2>
+                Prompt Preview
+            </h2>
+
+            <button
+                class="btn-secondary"
+                id="btnCopy"
+            >
+                Copy
+            </button>
+
+        </div>
+
+
+        <textarea
+            id="promptOutput"
+            readonly
+            placeholder="Prompt sẽ xuất hiện ở đây..."
+        ></textarea>
+
+
+        <div id="status">
+            Sẵn sàng.
+        </div>
+
+    </aside>
+
+
+</main>
+
+
+
+<!-- =========================================================
+     TEMPORARY TEST SCRIPT
+     ========================================================= -->
+
+<script type="module">
+
+    /*
+     * Giai đoạn này chỉ dùng để kiểm tra giao diện.
+     *
+     * Chưa kết nối app.js.
+     */
+
+    import {
+        genres
+    } from "./js/music/genres.js";
+
+    import {
+        moods
+    } from "./js/music/moods.js";
+
+    import {
+        instruments
+    } from "./js/music/instruments.js";
+
+    import {
+        styles
+    } from "./js/music/styles.js";
+
+    import {
+        vocals
+    } from "./js/music/vocals.js";
+
+    import {
+        structures
+    } from "./js/music/structures.js";
+
+    import {
+        tempos
+    } from "./js/music/tempos.js";
+
+
+    /* =====================================================
+       ELEMENTS
+       ===================================================== */
+
+    const genreSelect =
+        document.getElementById("genre");
+
+    const styleSelect =
+        document.getElementById("style");
+
+    const moodList =
+        document.getElementById("mood");
+
+    const instrumentList =
+        document.getElementById("instrumentList");
+
+    const vocalSelect =
+        document.getElementById("vocal");
+
+    const structureList =
+        document.getElementById("structureList");
+
+    const tempoSelect =
+        document.getElementById("tempo");
+
+    const output =
+        document.getElementById("promptOutput");
+
+if (output) {
+    output.value = prompt;
+}
+
+    const status =
+        document.getElementById("status");
+
+
+    /* =====================================================
+       HELPER
+       ===================================================== */
+
+    function getName(item) {
+
+        return (
+            item.name ||
+            item.label ||
+            item.id ||
+            ""
+        );
+    }
+
+
+    /* =====================================================
+       GENRES
+       ===================================================== */
+
+    if (Array.isArray(genres)) {
+
+        genres.forEach(genre => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                genre.id;
+
+            option.textContent =
+                getName(genre);
+
+            genreSelect.appendChild(option);
+
+        });
+
+    }
+
+
+    /* =====================================================
+       STYLES
+       ===================================================== */
+
+    if (Array.isArray(styles)) {
+
+        styles.forEach(style => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                style.id;
+
+            option.textContent =
+                getName(style);
+
+            styleSelect.appendChild(option);
+
+        });
+
+    }
+
+
+    /* =====================================================
+       MOODS
+       ===================================================== */
+
+   if (Array.isArray(moods)) {
+
+    moods.forEach(mood => {
+
+        const option =
+            document.createElement("option");
+
+        option.value =
+            mood.id;
+
+        option.textContent =
+            getName(mood);
+
+        option.dataset.type =
+            "mood";
+
+        moodList.appendChild(option);
+
+    });
+
+}
+
+    /* =====================================================
+       VOCALS
+       ===================================================== */
+
+    if (Array.isArray(vocals)) {
+
+        vocals.forEach(vocal => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                vocal.id;
+
+            option.textContent =
+                getName(vocal);
+
+            vocalSelect.appendChild(option);
+
+        });
+
+    }
+
+
+    /* =====================================================
+       STRUCTURES
+       ===================================================== */
+
+    if (Array.isArray(structures)) {
+
+        structures.forEach(structure => {
+
+            const label =
+                document.createElement("label");
+
+            label.className =
+                "checkbox-item";
+
+            label.innerHTML = `
+                <input
+                    type="checkbox"
+                    value="${structure.id}"
+                    data-type="structure"
+                >
+                <span>${getName(structure)}</span>
+            `;
+
+
+        });
+
+    }
+
+
+    /* =====================================================
+       TEMPOS
+       ===================================================== */
+
+    if (Array.isArray(tempos)) {
+
+        tempos.forEach(tempo => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                tempo.id;
+
+            option.textContent =
+                getName(tempo);
+
+            tempoSelect.appendChild(option);
+
+        });
+
+    }
+
+
+    /* =====================================================
+       TEMPORARY PROMPT
+       ===================================================== */
+import {
+    buildMusicPrompt
+} from "./js/prompt/Builder.js";
+
+    /* =====================================================
+       RESET
+       ===================================================== */
+
+    document
+        .getElementById("btnReset")
+        .addEventListener("click", () => {
+
+            document
+                .querySelectorAll("input, textarea, select")
+                .forEach(element => {
+
+                    if (
+                        element.type === "checkbox"
+                    ) {
+                        element.checked = false;
+                    }
+                    else {
+                        element.value = "";
+                    }
+
+                });
+
+            output.value = "";
+
+            status.textContent =
+                "Đã xóa dữ liệu.";
+
+        });
+
+
+    /* =====================================================
+       COPY
+       ===================================================== */
+
+    document
+        .getElementById("btnCopy")
+        .addEventListener("click", async () => {
+
+            if (!output.value) {
+                return;
+            }
+
+            await navigator.clipboard.writeText(
+                output.value
+            );
+
+            status.textContent =
+                "Đã copy prompt.";
+
+        });
+
+</script>
+
+<script type="module" src="./app.js"></script>
+
+</body>
+
+</html>
