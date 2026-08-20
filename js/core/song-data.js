@@ -90,6 +90,7 @@ const songData = {
 
     vocal: "",
 
+	vocalTechnique: "",
 	vocalAge: "",
 	
 	vocalTone: "",
