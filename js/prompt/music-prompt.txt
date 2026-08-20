@@ -34,6 +34,8 @@ Loại giọng:
 {{VOCAL_AGE}}
 Chất giọng:
 {{VOCAL_TONE}}
+Kỹ thuật going:
+{{VOCAL_TECHNIQUE}}
 
 4. LỜI BÀI HÁT
 ==================================================
