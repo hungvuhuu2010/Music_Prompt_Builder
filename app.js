@@ -29,7 +29,7 @@ import {
     resetSongData,
     saveSongData,
     loadSongData,
-	createSongData,
+createSongData,
     clearSongData
 } from "./js/core/song-data.js";
 
@@ -1313,6 +1313,15 @@ if (vocal) {
                 vocalTone.value;
         }
 
+const vocalTechnique =
+    document.getElementById("vocalTechnique");
+
+if (vocalTechnique) {
+
+    appState.songData.vocalTechnique =
+        vocalTechnique.value.trim();
+}
+
 /* =====================================================
    06. LỜI BÀI HÁT
    ===================================================== */
@@ -1550,6 +1559,15 @@ if (vocalTone) {
 
     vocalTone.value =
         appState.songData.vocalTone || "";
+}
+
+const vocalTechnique =
+    document.getElementById("vocalTechnique");
+
+if (vocalTechnique) {
+
+    vocalTechnique.value =
+        appState.songData.vocalTechnique || "";
 }
 
 /* =====================================================
