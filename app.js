@@ -29,6 +29,7 @@ import {
     resetSongData,
     saveSongData,
     loadSongData,
+	createSongData,
     clearSongData
 } from "./js/core/song-data.js";
 
