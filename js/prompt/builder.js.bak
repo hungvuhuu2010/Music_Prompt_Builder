@@ -1,0 +1,1419 @@
+/* =========================================================
+   AI MUSIC PROMPT BUILDER
+   File: promptBuilder.js
+
+   Nhiệm vụ:
+   - Nhận dữ liệu bài hát
+   - Kết hợp genre / style / mood / instruments
+   - Xây dựng prompt hoàn chỉnh cho AI tạo nhạc
+   - Không chứa dữ liệu music database
+   ========================================================= */
+
+
+/* =========================================================
+   1. IMPORT MUSIC DATABASE
+   ========================================================= */
+
+import {
+    getGenreById
+} from "../music/genres.js";
+
+import {
+    getMoodById
+} from "../music/moods.js";
+
+import {
+    getStyleById
+} from "../music/styles.js";
+
+import {
+    getInstrumentById
+} from "../music/instruments.js";
+
+
+/* =========================================================
+   2. UTILITY
+   ========================================================= */
+
+/**
+ * Chuyển giá trị thành chuỗi an toàn
+ */
+function safe(value) {
+
+    if (
+        value === undefined ||
+        value === null
+    ) {
+        return "";
+    }
+
+    return String(value).trim();
+}
+
+
+/**
+ * Lấy tên hiển thị từ object hoặc ID
+ */
+function resolveName(value, getter) {
+
+    if (!value) {
+        return "";
+    }
+
+    if (typeof value === "object") {
+
+        return (
+            value.name ||
+            value.label ||
+            value.id ||
+            ""
+        );
+    }
+
+    const item = getter(value);
+
+    return item
+        ? item.name
+        : safe(value);
+}
+
+
+/**
+ * Chuyển mảng thành chuỗi
+ */
+function joinValues(values, separator = ", ") {
+
+    if (!Array.isArray(values)) {
+        return safe(values);
+    }
+
+    return values
+        .filter(Boolean)
+        .map(value => safe(value))
+        .join(separator);
+}
+
+
+/**
+ * Tạo một dòng prompt nếu có dữ liệu
+ */
+function line(label, value) {
+
+    const text = safe(value);
+
+    if (!text) {
+        return "";
+    }
+
+    return `${label}: ${text}`;
+}
+
+
+/* =========================================================
+   3. RESOLVE MUSIC DATA
+   ========================================================= */
+
+/**
+ * Lấy dữ liệu genre
+ */
+function resolveGenre(songData) {
+
+    if (!songData) {
+        return null;
+    }
+
+    const genreId =
+        songData.genre ||
+        songData.genreId;
+
+    if (!genreId) {
+        return null;
+    }
+
+    if (typeof genreId === "object") {
+        return genreId;
+    }
+
+    return getGenreById(genreId);
+}
+
+
+/**
+ * Lấy dữ liệu style
+ */
+function resolveStyle(songData) {
+
+    if (!songData) {
+        return null;
+    }
+
+    const styleId =
+        songData.style ||
+        songData.styleId;
+
+    if (!styleId) {
+        return null;
+    }
+
+    if (typeof styleId === "object") {
+        return styleId;
+    }
+
+    return getStyleById(styleId);
+}
+
+
+/**
+ * Lấy danh sách mood
+ */
+function resolveMoods(songData) {
+
+    if (!songData) {
+        return [];
+    }
+
+    const moods =
+        songData.moods ||
+        songData.mood ||
+        [];
+
+    if (!Array.isArray(moods)) {
+        return [];
+    }
+
+    return moods
+        .map(mood => {
+
+            if (typeof mood === "object") {
+                return mood;
+            }
+
+            return getMoodById(mood);
+        })
+        .filter(Boolean);
+}
+
+
+/**
+ * Lấy danh sách instruments
+ */
+function resolveInstruments(songData) {
+
+    if (!songData) {
+        return [];
+    }
+
+    const instruments =
+        songData.instruments ||
+        songData.instrument ||
+        [];
+
+    if (!Array.isArray(instruments)) {
+        return [];
+    }
+
+    return instruments
+        .map(instrument => {
+
+            if (typeof instrument === "object") {
+                return instrument;
+            }
+
+            return getInstrumentById(instrument);
+        })
+        .filter(Boolean);
+}
+
+
+/* =========================================================
+   4. BUILD BASIC INFORMATION
+   ========================================================= */
+
+/**
+ * Xây dựng phần thông tin chung
+ */
+function buildBasicSection(songData) {
+
+    const lines = [];
+
+    const purpose =
+        songData.purpose;
+
+    const topic =
+        songData.topic;
+
+    const language =
+        songData.language;
+
+    const title =
+        songData.title;
+
+    const targetAudience =
+        songData.targetAudience;
+
+
+    if (title) {
+        lines.push(
+            line("Song title", title)
+        );
+    }
+
+    if (purpose) {
+        lines.push(
+            line("Purpose", purpose)
+        );
+    }
+
+    if (topic) {
+        lines.push(
+            line("Theme / Story", topic)
+        );
+    }
+
+    if (language) {
+        lines.push(
+            line("Language", language)
+        );
+    }
+
+    if (targetAudience) {
+        lines.push(
+            line("Target audience", targetAudience)
+        );
+    }
+
+    return lines
+        .filter(Boolean)
+        .join("\n");
+}
+
+
+/* =========================================================
+   5. BUILD GENRE SECTION
+   ========================================================= */
+
+function buildGenreSection(genre) {
+
+    if (!genre) {
+        return "";
+    }
+
+    const lines = [];
+
+    lines.push(
+        `Genre: ${genre.name}`
+    );
+
+    if (genre.category) {
+        lines.push(
+            `Genre category: ${genre.category}`
+        );
+    }
+
+    if (genre.description) {
+        lines.push(
+            `Genre characteristics: ${genre.description}`
+        );
+    }
+
+    if (genre.defaultTempo) {
+
+        const tempo =
+            genre.defaultTempo;
+
+        lines.push(
+            `Typical tempo: ${tempo.min}-${tempo.max} BPM`
+        );
+
+        if (tempo.recommended) {
+
+            lines.push(
+                `Recommended tempo: ${tempo.recommended} BPM`
+            );
+        }
+    }
+
+    if (genre.defaultTimeSignature) {
+
+        lines.push(
+            `Default time signature: ${genre.defaultTimeSignature}`
+        );
+    }
+
+    if (genre.defaultEnergy) {
+
+        lines.push(
+            `Typical energy: ${genre.defaultEnergy}`
+        );
+    }
+
+    if (
+        Array.isArray(genre.typicalVocals) &&
+        genre.typicalVocals.length
+    ) {
+
+        lines.push(
+            `Typical vocal characteristics: ${joinValues(
+                genre.typicalVocals
+            )}`
+        );
+    }
+
+    if (
+        Array.isArray(genre.keywords) &&
+        genre.keywords.length
+    ) {
+
+        lines.push(
+            `Genre keywords: ${joinValues(
+                genre.keywords
+            )}`
+        );
+    }
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   6. BUILD STYLE SECTION
+   ========================================================= */
+
+function buildStyleSection(style) {
+
+    if (!style) {
+        return "";
+    }
+
+    const lines = [];
+
+    lines.push(
+        `Style: ${style.name}`
+    );
+
+    if (style.description) {
+
+        lines.push(
+            `Style characteristics: ${style.description}`
+        );
+    }
+
+    if (style.defaultTempo) {
+
+        const tempo =
+            style.defaultTempo;
+
+        lines.push(
+            `Style tempo: ${tempo.min}-${tempo.max} BPM`
+        );
+
+        if (tempo.recommended) {
+
+            lines.push(
+                `Recommended style tempo: ${tempo.recommended} BPM`
+            );
+        }
+    }
+
+    if (style.defaultEnergy) {
+
+        lines.push(
+            `Style energy: ${style.defaultEnergy}`
+        );
+    }
+
+    if (style.arrangementStyle) {
+
+        lines.push(
+            `Arrangement style: ${style.arrangementStyle}`
+        );
+    }
+
+    if (style.arrangementDensity) {
+
+        lines.push(
+            `Arrangement density: ${style.arrangementDensity}`
+        );
+    }
+
+    if (
+        Array.isArray(style.vocalStyle) &&
+        style.vocalStyle.length
+    ) {
+
+        lines.push(
+            `Style vocal characteristics: ${joinValues(
+                style.vocalStyle
+            )}`
+        );
+    }
+
+    if (
+        Array.isArray(style.keywords) &&
+        style.keywords.length
+    ) {
+
+        lines.push(
+            `Style keywords: ${joinValues(
+                style.keywords
+            )}`
+        );
+    }
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   7. BUILD MOOD SECTION
+   ========================================================= */
+
+function buildMoodSection(moods) {
+
+    if (!moods.length) {
+        return "";
+    }
+
+    const lines = [];
+
+    lines.push(
+        "Mood and emotional direction:"
+    );
+
+    moods.forEach(mood => {
+
+        if (!mood) {
+            return;
+        }
+
+        let text =
+            mood.name ||
+            mood.id ||
+            "";
+
+        if (mood.description) {
+
+            text +=
+                ` — ${mood.description}`;
+        }
+
+        lines.push(
+            `- ${text}`
+        );
+    });
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   8. BUILD INSTRUMENT SECTION
+   ========================================================= */
+
+function buildInstrumentSection(
+    instruments,
+    genre,
+    style
+) {
+
+    const lines = [];
+
+    /*
+     * Nhạc cụ chính từ genre
+     */
+    if (
+        genre &&
+        Array.isArray(genre.mainInstruments)
+    ) {
+
+        lines.push(
+            `Genre main instruments: ${joinValues(
+                genre.mainInstruments
+            )}`
+        );
+    }
+
+
+    /*
+     * Nhạc cụ phụ từ genre
+     */
+    if (
+        genre &&
+        Array.isArray(genre.secondaryInstruments)
+    ) {
+
+        lines.push(
+            `Genre secondary instruments: ${joinValues(
+                genre.secondaryInstruments
+            )}`
+        );
+    }
+
+
+    /*
+     * Nhạc cụ chính từ style
+     */
+    if (
+        style &&
+        Array.isArray(style.mainInstruments)
+    ) {
+
+        lines.push(
+            `Style main instruments: ${joinValues(
+                style.mainInstruments
+            )}`
+        );
+    }
+
+
+    /*
+     * Nhạc cụ người dùng lựa chọn
+     */
+    if (instruments.length) {
+
+        const names =
+            instruments
+                .map(instrument =>
+                    instrument.name ||
+                    instrument.id
+                )
+                .filter(Boolean);
+
+        if (names.length) {
+
+            lines.push(
+                `Selected instruments: ${joinValues(names)}`
+            );
+        }
+    }
+
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   9. BUILD VOCAL SECTION
+   ========================================================= */
+
+function buildVocalSection(
+    songData,
+    genre,
+    style
+) {
+
+    const lines = [];
+
+    const vocal =
+        songData.vocal ||
+        songData.vocalStyle ||
+        songData.voice;
+
+
+    if (vocal) {
+
+        if (typeof vocal === "object") {
+
+            if (vocal.name) {
+
+                lines.push(
+                    `Vocal style: ${vocal.name}`
+                );
+            }
+
+            if (vocal.description) {
+
+                lines.push(
+                    `Vocal characteristics: ${vocal.description}`
+                );
+            }
+
+        } else {
+
+            lines.push(
+                `Vocal style: ${vocal}`
+            );
+        }
+    }
+
+
+    /*
+     * Nếu người dùng chưa chỉ định,
+     * dùng vocal mặc định của style/genre.
+     */
+    if (!vocal && style) {
+
+        if (
+            Array.isArray(style.vocalStyle) &&
+            style.vocalStyle.length
+        ) {
+
+            lines.push(
+                `Recommended vocal style: ${joinValues(
+                    style.vocalStyle
+                )}`
+            );
+        }
+    }
+
+
+    if (!vocal && genre) {
+
+        if (
+            Array.isArray(genre.typicalVocals) &&
+            genre.typicalVocals.length
+        ) {
+
+            lines.push(
+                `Recommended vocal characteristics: ${joinValues(
+                    genre.typicalVocals
+                )}`
+            );
+        }
+    }
+
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   10. BUILD TEMPO SECTION
+   ========================================================= */
+
+function buildTempoSection(
+    songData,
+    genre,
+    style
+) {
+
+    const lines = [];
+
+    /*
+     * Người dùng chỉ định BPM
+     */
+    const bpm =
+        songData.bpm ||
+        songData.tempo;
+
+
+    if (bpm) {
+
+        lines.push(
+            `Tempo: ${bpm} BPM`
+        );
+
+        return lines.join("\n");
+    }
+
+
+    /*
+     * Ưu tiên tempo của style
+     */
+    if (
+        style &&
+        style.defaultTempo
+    ) {
+
+        const tempo =
+            style.defaultTempo;
+
+        lines.push(
+            `Tempo: ${tempo.recommended} BPM`
+        );
+
+        return lines.join("\n");
+    }
+
+
+    /*
+     * Sau đó dùng genre
+     */
+    if (
+        genre &&
+        genre.defaultTempo
+    ) {
+
+        const tempo =
+            genre.defaultTempo;
+
+        lines.push(
+            `Tempo: ${tempo.recommended} BPM`
+        );
+    }
+
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   11. BUILD ARRANGEMENT SECTION
+   ========================================================= */
+
+function buildArrangementSection(
+    songData,
+    genre,
+    style
+) {
+
+    const lines = [];
+
+    /*
+     * Arrangement từ style
+     */
+    if (style) {
+
+        if (style.arrangementStyle) {
+
+            lines.push(
+                `Arrangement: ${style.arrangementStyle}`
+            );
+        }
+
+        if (style.arrangementDensity) {
+
+            lines.push(
+                `Arrangement density: ${style.arrangementDensity}`
+            );
+        }
+    }
+
+
+    /*
+     * Arrangement từ genre
+     */
+    if (
+        genre &&
+        genre.arrangement
+    ) {
+
+        const arrangement =
+            genre.arrangement;
+
+        if (arrangement.dynamics) {
+
+            lines.push(
+                `Dynamics: ${arrangement.dynamics}`
+            );
+        }
+    }
+
+
+    /*
+     * Người dùng yêu cầu riêng
+     */
+    if (songData.arrangement) {
+
+        lines.push(
+            `Additional arrangement direction: ${songData.arrangement}`
+        );
+    }
+
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   12. BUILD SONG STRUCTURE
+   ========================================================= */
+
+function buildStructureSection(
+    songData,
+    genre
+) {
+
+    const structure =
+        songData.structure;
+
+
+    /*
+     * Người dùng tự chọn cấu trúc
+     */
+    if (Array.isArray(structure) && structure.length) {
+
+        return [
+            "Song structure:",
+            structure
+                .map(section =>
+                    `- ${section}`
+                )
+                .join("\n")
+        ].join("\n");
+    }
+
+
+    /*
+     * Nếu không có thì lấy structure mặc định
+     * từ genre
+     */
+    if (
+        genre &&
+        Array.isArray(genre.structure) &&
+        genre.structure.length
+    ) {
+
+        return [
+            "Suggested song structure:",
+            genre.structure
+                .map(section =>
+                    `- ${section}`
+                )
+                .join("\n")
+        ].join("\n");
+    }
+
+
+    return "";
+}
+
+
+/* =========================================================
+   13. BUILD LYRIC DIRECTION
+   ========================================================= */
+
+function buildLyricSection(songData) {
+
+    const lines = [];
+
+    const lyric =
+        songData.lyrics ||
+        songData.lyricDirection ||
+        songData.lyricStyle;
+
+
+    if (lyric) {
+
+        lines.push(
+            "Lyric direction:"
+        );
+
+        lines.push(
+            safe(lyric)
+        );
+    }
+
+
+    if (songData.story) {
+
+        lines.push(
+            `Story direction: ${songData.story}`
+        );
+    }
+
+
+    if (songData.message) {
+
+        lines.push(
+            `Main message: ${songData.message}`
+        );
+    }
+
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   14. BUILD PRODUCTION DIRECTION
+   ========================================================= */
+
+function buildProductionSection(songData) {
+
+    const lines = [];
+
+    if (songData.production) {
+
+        lines.push(
+            `Production direction: ${songData.production}`
+        );
+    }
+
+    if (songData.mix) {
+
+        lines.push(
+            `Mixing direction: ${songData.mix}`
+        );
+    }
+
+    if (songData.mastering) {
+
+        lines.push(
+            `Mastering direction: ${songData.mastering}`
+        );
+    }
+
+    if (songData.reference) {
+
+        lines.push(
+            `Reference sound: ${songData.reference}`
+        );
+    }
+
+
+    return lines.join("\n");
+}
+
+
+/* =========================================================
+   15. BUILD NEGATIVE / AVOID SECTION
+   ========================================================= */
+
+function buildAvoidSection(songData) {
+
+    const avoid =
+        songData.avoid ||
+        songData.exclude ||
+        songData.negative;
+
+
+    if (!avoid) {
+        return "";
+    }
+
+
+    if (Array.isArray(avoid)) {
+
+        return [
+            "Avoid:",
+            avoid
+                .filter(Boolean)
+                .map(item => `- ${item}`)
+                .join("\n")
+        ].join("\n");
+    }
+
+
+    return [
+        "Avoid:",
+        safe(avoid)
+    ].join("\n");
+}
+
+
+/* =========================================================
+   16. BUILD COMPLETE PROMPT
+   ========================================================= */
+
+/**
+ * Xây dựng prompt hoàn chỉnh
+ *
+ * @param {Object} songData
+ * @returns {string}
+ */
+export function buildMusicPrompt(songData = {}) {
+
+    const genre =
+        resolveGenre(songData);
+
+    const style =
+        resolveStyle(songData);
+
+    const moods =
+        resolveMoods(songData);
+
+    const instruments =
+        resolveInstruments(songData);
+
+
+    const sections = [];
+
+
+    /* -----------------------------------------------------
+       SYSTEM ROLE
+       ----------------------------------------------------- */
+
+    sections.push(
+`You are an expert music composer, songwriter, arranger, and music producer.
+
+Create a coherent song based on the musical direction provided below.
+
+Prioritize musical consistency, emotional storytelling, strong melody, appropriate arrangement, and professional song structure.`
+    );
+
+
+    /* -----------------------------------------------------
+       BASIC INFORMATION
+       ----------------------------------------------------- */
+
+    const basic =
+        buildBasicSection(songData);
+
+    if (basic) {
+
+        sections.push(
+`[SONG INFORMATION]
+
+${basic}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       GENRE
+       ----------------------------------------------------- */
+
+    const genreSection =
+        buildGenreSection(genre);
+
+    if (genreSection) {
+
+        sections.push(
+`[GENRE]
+
+${genreSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       STYLE
+       ----------------------------------------------------- */
+
+    const styleSection =
+        buildStyleSection(style);
+
+    if (styleSection) {
+
+        sections.push(
+`[STYLE]
+
+${styleSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       MOOD
+       ----------------------------------------------------- */
+
+    const moodSection =
+        buildMoodSection(moods);
+
+    if (moodSection) {
+
+        sections.push(
+`[MOOD]
+
+${moodSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       TEMPO
+       ----------------------------------------------------- */
+
+    const tempoSection =
+        buildTempoSection(
+            songData,
+            genre,
+            style
+        );
+
+    if (tempoSection) {
+
+        sections.push(
+`[TEMPO]
+
+${tempoSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       INSTRUMENTS
+       ----------------------------------------------------- */
+
+    const instrumentSection =
+        buildInstrumentSection(
+            instruments,
+            genre,
+            style
+        );
+
+    if (instrumentSection) {
+
+        sections.push(
+`[INSTRUMENTATION]
+
+${instrumentSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       VOCAL
+       ----------------------------------------------------- */
+
+    const vocalSection =
+        buildVocalSection(
+            songData,
+            genre,
+            style
+        );
+
+    if (vocalSection) {
+
+        sections.push(
+`[VOCAL]
+
+${vocalSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       ARRANGEMENT
+       ----------------------------------------------------- */
+
+    const arrangementSection =
+        buildArrangementSection(
+            songData,
+            genre,
+            style
+        );
+
+    if (arrangementSection) {
+
+        sections.push(
+`[ARRANGEMENT]
+
+${arrangementSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       STRUCTURE
+       ----------------------------------------------------- */
+
+    const structureSection =
+        buildStructureSection(
+            songData,
+            genre
+        );
+
+    if (structureSection) {
+
+        sections.push(
+`[SONG STRUCTURE]
+
+${structureSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       LYRICS
+       ----------------------------------------------------- */
+
+    const lyricSection =
+        buildLyricSection(songData);
+
+    if (lyricSection) {
+
+        sections.push(
+`[LYRICAL DIRECTION]
+
+${lyricSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       PRODUCTION
+       ----------------------------------------------------- */
+
+    const productionSection =
+        buildProductionSection(songData);
+
+    if (productionSection) {
+
+        sections.push(
+`[PRODUCTION]
+
+${productionSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       AVOID
+       ----------------------------------------------------- */
+
+    const avoidSection =
+        buildAvoidSection(songData);
+
+    if (avoidSection) {
+
+        sections.push(
+`[AVOID]
+
+${avoidSection}`
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       FINAL INSTRUCTION
+       ----------------------------------------------------- */
+
+    sections.push(
+`[FINAL INSTRUCTION]
+
+Use all provided information as a unified musical specification.
+
+Do not treat each parameter as an isolated instruction.
+
+Resolve conflicts intelligently by prioritizing:
+1. User-specific instructions
+2. Style characteristics
+3. Genre characteristics
+4. Default recommendations
+
+Keep the final result musically coherent and suitable for the intended audience.
+
+Do not mention these instructions in the generated song.`
+    );
+
+
+    return sections
+        .filter(Boolean)
+        .join("\n\n");
+}
+
+
+/* =========================================================
+   17. SIMPLE PROMPT BUILDER
+   ========================================================= */
+
+/**
+ * Phiên bản rút gọn.
+ *
+ * Dùng khi cần prompt ngắn để gửi tới
+ * các AI tạo nhạc có giới hạn token.
+ */
+export function buildCompactMusicPrompt(
+    songData = {}
+) {
+
+    const genre =
+        resolveGenre(songData);
+
+    const style =
+        resolveStyle(songData);
+
+    const moods =
+        resolveMoods(songData);
+
+    const instruments =
+        resolveInstruments(songData);
+
+
+    const parts = [];
+
+
+    if (songData.topic) {
+
+        parts.push(
+            `Theme: ${songData.topic}`
+        );
+    }
+
+
+    if (genre) {
+
+        parts.push(
+            `Genre: ${genre.name}`
+        );
+    }
+
+
+    if (style) {
+
+        parts.push(
+            `Style: ${style.name}`
+        );
+    }
+
+
+    if (moods.length) {
+
+        parts.push(
+            `Mood: ${joinValues(
+                moods.map(mood =>
+                    mood.name || mood.id
+                )
+            )}`
+        );
+    }
+
+
+    const bpm =
+        songData.bpm ||
+        songData.tempo ||
+        style?.defaultTempo?.recommended ||
+        genre?.defaultTempo?.recommended;
+
+
+    if (bpm) {
+
+        parts.push(
+            `Tempo: ${bpm} BPM`
+        );
+    }
+
+
+    if (instruments.length) {
+
+        parts.push(
+            `Instruments: ${joinValues(
+                instruments.map(instrument =>
+                    instrument.name || instrument.id
+                )
+            )}`
+        );
+    }
+
+
+    if (songData.vocal) {
+
+        parts.push(
+            `Vocal: ${songData.vocal}`
+        );
+    }
+
+
+    if (songData.structure) {
+
+        parts.push(
+            `Structure: ${joinValues(
+                songData.structure,
+                " → "
+            )}`
+        );
+    }
+
+
+    if (songData.lyrics) {
+
+        parts.push(
+            `Lyrics: ${songData.lyrics}`
+        );
+    }
+
+
+    return parts.join("\n");
+}
+
+
+/* =========================================================
+   18. EXPORT DEFAULT
+   ========================================================= */
+
+export default {
+    buildMusicPrompt,
+    buildCompactMusicPrompt
+};
