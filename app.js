@@ -576,7 +576,6 @@ console.log("[APP] renderApplication called");
     renderSongData();
 restoreFormData();
     renderPrompt();
-
    
 }
 
@@ -620,6 +619,8 @@ function renderSongData() {
 
     renderMoodSelector();
     renderMoodLevels();
+renderTempoSelector();
+
 }
 
 
@@ -771,6 +772,37 @@ slider.id = "moodLevel";
 
     container.appendChild(wrapper);
 
+}
+
+function renderTempoSelector() {
+
+    const select =
+        document.getElementById("tempo");
+
+    if (!select) {
+        return;
+    }
+
+    select.innerHTML = `
+        <option value="">
+            -- Nhịp độ --
+        </option>
+    `;
+
+    musicDatabase.tempos.forEach(tempo => {
+
+        const option =
+            document.createElement("option");
+
+        option.value =
+            tempo.id;
+
+        option.textContent =
+            tempo.name;
+
+        select.appendChild(option);
+
+    });
 }
 
 /* =========================================================
@@ -1126,12 +1158,6 @@ function updateSongDataFromElement(element) {
                     item => item.id === value
                 );
 
-            appState.songData.mood =
-                mood
-                    ? mood.name
-                    : "";
-
-            break;
 
 
         /* =========================================
@@ -1146,6 +1172,15 @@ function updateSongDataFromElement(element) {
             break;
 
 
+        /* =========================================
+           MỨC ĐỘ CẢM XÚC
+           ========================================= */
+case "tempo":
+
+    appState.songData.tempo =
+        element.value;
+
+    break;
         /* =========================================
            GIỌNG HÁT
            ========================================= */
@@ -1274,6 +1309,18 @@ function saveCurrentFormData() {
                 Number(moodLevel.value);
         }
 
+        /* =====================================================
+           NHỊP ĐIỆU
+           ===================================================== */
+
+const tempo =
+    document.getElementById("tempo");
+
+if (tempo) {
+
+    appState.songData.tempo =
+        tempo.value;
+}
 
         /* =====================================================
            05. GIỌNG HÁT
@@ -1528,7 +1575,19 @@ function restoreFormData() {
 
     }
 
+/* =====================================================
+   NHỊP ĐIỆU
+   ===================================================== */
 
+const tempo =
+    document.getElementById("tempo");
+
+if (tempo) {
+
+    tempo.value =
+        appState.songData.tempo || "";
+
+}
 /* =====================================================
    05. GIỌNG HÁT
    ===================================================== */
