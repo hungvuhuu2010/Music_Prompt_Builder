@@ -28,6 +28,8 @@ export const PROMPT_VARIABLES = {
     "{{MOOD_LEVEL}}":
         "moodLevel",
 
+    "{{TEMPO}}":
+        "tempo",
 
     "{{VOCAL}}":
         "vocal",
